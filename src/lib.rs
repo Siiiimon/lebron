@@ -17,6 +17,8 @@ const EEPY: &[u8] = include_bytes!("../assets/eepy.bmp");
 
 const IDLE_IMAGE: &[u8] = include_bytes!("../assets/face.bmp");
 
+const EEPY_TIMEOUT: u32 = 200;
+
 pub enum State {
     Startup,
 
@@ -30,6 +32,7 @@ pub enum State {
 pub struct App {
     state: crate::State,
     dice: Rng,
+    eepy_timer: u32,
 
     startup_anim: Animation<Bmp<'static, Rgb565>>,
     blink_anim: Animation<Bmp<'static, Rgb565>>,
@@ -58,6 +61,7 @@ impl App {
         Self {
             state: State::Startup,
             dice: Rng::new(),
+            eepy_timer: 0,
 
             startup_anim,
             blink_anim,
@@ -73,6 +77,7 @@ impl App {
             State::Startup => {
                 if self.startup_anim.tick() {
                     self.state = State::Idle;
+                    self.eepy_timer = EEPY_TIMEOUT;
                 }
             },
             State::Blink => {
@@ -93,7 +98,8 @@ impl App {
                     self.state = State::Blink;
                 }
 
-                if self.dice.f32() < 0.001 {
+                self.eepy_timer -= 1;
+                if self.eepy_timer == 0 {
                     self.state = State::IdleToEepy;
                 }
             },
