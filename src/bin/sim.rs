@@ -1,3 +1,6 @@
+use std::thread;
+use std::time::Duration;
+
 use embedded_graphics::{
     pixelcolor::Rgb565,
     prelude::*,
@@ -26,6 +29,8 @@ fn main() -> Result<(), core::convert::Infallible> {
 
         app.update();
         app.draw(&mut display)?;
+
+        thread::sleep(Duration::from_millis(33));
     }
 
     Ok(())
