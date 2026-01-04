@@ -1,4 +1,3 @@
-use std::{thread, time::Duration};
 use embedded_graphics::{
     pixelcolor::Rgb565,
     prelude::*,
@@ -23,7 +22,6 @@ fn main() -> Result<(), core::convert::Infallible> {
         }
 
         lebron::draw(&mut display).unwrap();
-        thread::sleep(Duration::from_millis(500));
     }
 
     Ok(())

@@ -1,32 +1,18 @@
-use embedded_graphics::{pixelcolor::Rgb565, prelude::*, primitives::{Circle, Ellipse, PrimitiveStyle}};
+use embedded_graphics::{image::Image, pixelcolor::Rgb565, prelude::*};
+use tinybmp::Bmp;
 
 pub const WIDTH: u32 = 240;
 pub const HEIGHT: u32 = 240;
+
+const FACE_DATA: &[u8] = include_bytes!("../assets/face.bmp");
 
 pub fn draw_face<D>(display: &mut D) -> Result<(), D::Error>
 where
     D: DrawTarget<Color = Rgb565>,
 {
-    let side_margin = 60;
-    Ellipse::new(Point::new(side_margin, 20), Size::new(30, 120))
-        .into_styled(PrimitiveStyle::with_fill(Rgb565::BLACK))
-        .draw(display)?;
+    let bmp = Bmp::<Rgb565>::from_slice(FACE_DATA).unwrap();
 
-    Ellipse::new(Point::new(WIDTH as i32 - 30 - side_margin, 20), Size::new(30, 120))
-        .into_styled(PrimitiveStyle::with_fill(Rgb565::BLACK))
-        .draw(display)?;
-
-    Ellipse::new(Point::new(side_margin + 5, 20 + 10), Size::new(20, 60))
-        .into_styled(PrimitiveStyle::with_fill(Rgb565::WHITE))
-        .draw(display)?;
-
-    Ellipse::new(Point::new(WIDTH as i32 - 30 - side_margin + 5, 20 + 10), Size::new(20, 60))
-        .into_styled(PrimitiveStyle::with_fill(Rgb565::WHITE))
-        .draw(display)?;
-
-    Circle::new(Point::new( (WIDTH as i32 / 2) - 5, HEIGHT as i32 - 60), 10)
-        .into_styled(PrimitiveStyle::with_fill(Rgb565::MAGENTA))
-        .draw(display)?;
+    Image::new(&bmp, Point::new(0, 0)).draw(display)?;
 
     Ok(())
 }
