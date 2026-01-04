@@ -11,6 +11,8 @@ fn main() -> Result<(), core::convert::Infallible> {
 
     let mut window = Window::new("Lebron", &OutputSettings::default());
 
+    let mut app = lebron::App::new();
+
     'running: loop {
         window.update(&display);
 
@@ -21,7 +23,9 @@ fn main() -> Result<(), core::convert::Infallible> {
             }
         }
 
-        lebron::draw(&mut display).unwrap();
+
+        app.update();
+        app.draw(&mut display)?;
     }
 
     Ok(())

@@ -1,13 +1,19 @@
-use std::thread;
-use std::time::Duration;
-
+use linux_embedded_hal::spidev::{SpiModeFlags, SpidevOptions};
 use linux_embedded_hal::{SpidevDevice, Delay};
 use mipidsi::interface::SpiInterface;
 use mipidsi::{Builder, models::ST7789};
 use rppal::gpio::Gpio;
 
 fn main() {
-    let spi = SpidevDevice::open("/dev/spidev0.1").unwrap();
+    let mut spi = SpidevDevice::open("/dev/spidev0.1").unwrap();
+
+    let spi_options = SpidevOptions::new()
+        .bits_per_word(8)
+        .max_speed_hz(60_000_000)
+        .mode(SpiModeFlags::SPI_MODE_3)
+        .build();
+
+    spi.configure(&spi_options).unwrap();
 
     let gpio = Gpio::new().unwrap();
 
@@ -30,9 +36,11 @@ fn main() {
         .display_size(240, 240)
         .init(&mut delay).unwrap();
 
+    let mut app = lebron::App::new();
+
     // draw something
     loop {
-        lebron::draw(&mut display).unwrap();
-        thread::sleep(Duration::from_millis(500));
+        app.update();
+        app.draw(&mut display).unwrap();
     }
 }
