@@ -51,10 +51,10 @@ impl App {
         let blink_anim = animation::Animation::new(blink, 9);
 
         let idle_to_eepy = Bmp::<Rgb565>::from_slice(IDLETOEEPY).unwrap();
-        let idle_to_eepy_anim = animation::Animation::new(idle_to_eepy, 4);
+        let idle_to_eepy_anim = animation::Animation::new(idle_to_eepy, 5);
 
         let eepy = Bmp::<Rgb565>::from_slice(EEPY).unwrap();
-        let eepy_anim = animation::Animation::new(eepy, 5);
+        let eepy_anim = animation::Animation::new(eepy, 16);
 
         let idle_image = Bmp::<Rgb565>::from_slice(IDLE_IMAGE).unwrap();
 
