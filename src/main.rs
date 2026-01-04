@@ -1,11 +1,9 @@
 use std::thread;
 use std::time::Duration;
 
-use embedded_graphics::primitives::{PrimitiveStyleBuilder, Rectangle};
 use linux_embedded_hal::{SpidevDevice, Delay};
 use mipidsi::interface::SpiInterface;
 use mipidsi::{Builder, models::ST7789};
-use embedded_graphics::{prelude::*, pixelcolor::Rgb565};
 use rppal::gpio::Gpio;
 
 fn main() {
@@ -33,23 +31,8 @@ fn main() {
         .init(&mut delay).unwrap();
 
     // draw something
-    let mut color = Rgb565::RED;
     loop {
-        color = match color {
-            Rgb565::RED => Rgb565::YELLOW,
-            Rgb565::YELLOW => Rgb565::GREEN,
-            Rgb565::GREEN => Rgb565::BLUE,
-            Rgb565::BLUE => Rgb565::RED,
-            _ => Rgb565::RED,
-        };
-        let style = PrimitiveStyleBuilder::new()
-            .fill_color(color)
-            .build();
-
-        Rectangle::new(Point::new(0, 0), Size::new(240, 240))
-            .into_styled(style)
-            .draw(&mut display).unwrap();
-
+        lebron::draw(&mut display).unwrap();
         thread::sleep(Duration::from_millis(500));
     }
 }
