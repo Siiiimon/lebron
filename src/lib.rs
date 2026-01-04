@@ -18,13 +18,13 @@ const EEPY: &[u8] = include_bytes!("../assets/eepy.bmp");
 const IDLE_IMAGE: &[u8] = include_bytes!("../assets/face.bmp");
 
 pub enum State {
-    STARTUP,
+    Startup,
 
-    IDLE,
-    BLINK,
+    Idle,
+    Blink,
 
-    IDLETOEEPY,
-    EEPY,
+    IdleToEepy,
+    Eepy,
 }
 
 pub struct App {
@@ -56,7 +56,7 @@ impl App {
         let idle_image = Bmp::<Rgb565>::from_slice(IDLE_IMAGE).unwrap();
 
         Self {
-            state: State::STARTUP,
+            state: State::Startup,
             dice: Rng::new(),
 
             startup_anim,
@@ -70,31 +70,31 @@ impl App {
 
     pub fn update(&mut self) {
         match self.state {
-            State::STARTUP => {
+            State::Startup => {
                 if self.startup_anim.tick() {
-                    self.state = State::IDLE;
+                    self.state = State::Idle;
                 }
             },
-            State::BLINK => {
+            State::Blink => {
                 if self.blink_anim.tick() {
-                    self.state = State::IDLE;
+                    self.state = State::Idle;
                 }
             },
-            State::IDLETOEEPY => {
+            State::IdleToEepy => {
                 if self.idle_to_eepy_anim.tick() {
-                    self.state = State::EEPY;
+                    self.state = State::Eepy;
                 }
             },
-            State::EEPY => {
+            State::Eepy => {
                 self.eepy_anim.tick();
             }
-            State::IDLE => {
+            State::Idle => {
                 if self.dice.f32() < 0.01 {
-                    self.state = State::BLINK;
+                    self.state = State::Blink;
                 }
 
                 if self.dice.f32() < 0.001 {
-                    self.state = State::IDLETOEEPY;
+                    self.state = State::IdleToEepy;
                 }
             },
         }
@@ -105,11 +105,11 @@ impl App {
         D: DrawTarget<Color = Rgb565>,
     {
         match self.state {
-            State::STARTUP => self.startup_anim.draw(display)?,
-            State::BLINK => self.blink_anim.draw(display)?,
-            State::IDLETOEEPY => self.idle_to_eepy_anim.draw(display)?,
-            State::EEPY => self.eepy_anim.draw(display)?,
-            State::IDLE => self.idle_image.draw(display)?,
+            State::Startup => self.startup_anim.draw(display)?,
+            State::Blink => self.blink_anim.draw(display)?,
+            State::IdleToEepy => self.idle_to_eepy_anim.draw(display)?,
+            State::Eepy => self.eepy_anim.draw(display)?,
+            State::Idle => self.idle_image.draw(display)?,
         }
 
         Ok(())
