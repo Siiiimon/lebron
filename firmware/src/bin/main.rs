@@ -10,8 +10,21 @@
 use esp_hal::{
     clock::CpuClock,
     main,
-    time::{Duration, Instant},
+    time::{Duration, Instant, Rate},
+    spi::{
+        Mode,
+        master::{Config, Spi},
+    },
+    gpio::{Output, OutputConfig, Level},
+    delay::Delay,
 };
+use mipidsi::Builder;
+use mipidsi::models::ST7789;
+use mipidsi::options::ColorInversion;
+use mipidsi::interface::SpiInterface;
+use embedded_graphics::pixelcolor::Rgb565;
+use embedded_graphics::draw_target::DrawTarget;
+use embedded_hal_bus::spi::ExclusiveDevice;
 
 use log::info;
 
@@ -36,12 +49,43 @@ fn main() -> ! {
     esp_println::logger::init_logger_from_env();
 
     let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
-    let _peripherals = esp_hal::init(config);
+    let peripherals = esp_hal::init(config);
 
+    let cs = peripherals.GPIO10;
+    let clk = peripherals.GPIO12;
+    let mosi = peripherals.GPIO11;
+    let dc = peripherals.GPIO8;
 
+    let spi_bus = Spi::new(
+        peripherals.SPI2,
+        Config::default()
+            .with_frequency(Rate::from_mhz(60))
+            .with_mode(Mode::_3),
+    )
+    .unwrap()
+    .with_sck(clk)
+    .with_mosi(mosi);
+
+    let mut cs_output = Output::new(cs, Level::High, OutputConfig::default());
+    let dc_output = Output::new(dc, Level::High, OutputConfig::default());
+
+    let spi_device = ExclusiveDevice::new_no_delay(spi_bus, cs_output).unwrap();
+
+    let mut buffer = [0_u8; 512];
+
+    let di = SpiInterface::new(spi_device, dc_output, &mut buffer);
+
+    let mut delay = Delay::new();
+
+    let mut display = Builder::new(ST7789, di)
+        .invert_colors(ColorInversion::Inverted)
+        .display_size(240, 240)
+        .init(&mut delay).unwrap();
+
+    display.clear(Rgb565::new(0xEC, 0x91, 0xB4)).unwrap();
 
     loop {
-        info!("Hello world!");
+        info!("the screen should be pink now");
         let delay_start = Instant::now();
         while delay_start.elapsed() < Duration::from_millis(500) {}
     }
