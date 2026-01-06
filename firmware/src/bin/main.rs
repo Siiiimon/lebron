@@ -7,32 +7,29 @@
 )]
 #![deny(clippy::large_stack_frames)]
 
+use embedded_hal_bus::spi::ExclusiveDevice;
 use esp_hal::{
     clock::CpuClock,
+    delay::Delay,
+    gpio::{Level, Output, OutputConfig},
     main,
-    time::{Duration, Instant, Rate},
     spi::{
         Mode,
         master::{Config, Spi},
     },
-    gpio::{Output, OutputConfig, Level},
-    delay::Delay,
+    time::Rate,
 };
 use mipidsi::Builder;
+use mipidsi::interface::SpiInterface;
 use mipidsi::models::ST7789;
 use mipidsi::options::ColorInversion;
-use mipidsi::interface::SpiInterface;
-use embedded_graphics::pixelcolor::Rgb565;
-use embedded_graphics::draw_target::DrawTarget;
-use embedded_hal_bus::spi::ExclusiveDevice;
 
-use log::info;
+use lebron_core::{App, HEIGHT, WIDTH};
 
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
     loop {}
 }
-
 
 // This creates a default app-descriptor required by the esp-idf bootloader.
 // For more information see: <https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/app_image_format.html#application-description>
@@ -59,19 +56,19 @@ fn main() -> ! {
     let spi_bus = Spi::new(
         peripherals.SPI2,
         Config::default()
-            .with_frequency(Rate::from_mhz(60))
-            .with_mode(Mode::_3),
+            .with_frequency(Rate::from_mhz(80))
+            .with_mode(Mode::_0),
     )
     .unwrap()
     .with_sck(clk)
     .with_mosi(mosi);
 
-    let mut cs_output = Output::new(cs, Level::High, OutputConfig::default());
+    let cs_output = Output::new(cs, Level::High, OutputConfig::default());
     let dc_output = Output::new(dc, Level::High, OutputConfig::default());
 
     let spi_device = ExclusiveDevice::new_no_delay(spi_bus, cs_output).unwrap();
 
-    let mut buffer = [0_u8; 512];
+    let mut buffer = [0_u8; 8192];
 
     let di = SpiInterface::new(spi_device, dc_output, &mut buffer);
 
@@ -79,15 +76,15 @@ fn main() -> ! {
 
     let mut display = Builder::new(ST7789, di)
         .invert_colors(ColorInversion::Inverted)
-        .display_size(240, 240)
-        .init(&mut delay).unwrap();
+        .display_size(WIDTH as u16, HEIGHT as u16)
+        .init(&mut delay)
+        .unwrap();
 
-    display.clear(Rgb565::new(0xEC, 0x91, 0xB4)).unwrap();
+    let mut app = App::new();
 
     loop {
-        info!("the screen should be pink now");
-        let delay_start = Instant::now();
-        while delay_start.elapsed() < Duration::from_millis(500) {}
+        app.update();
+        app.draw(&mut display).unwrap();
     }
 
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v~1.0/examples
