@@ -1,3 +1,4 @@
+#![no_std]
 use embedded_graphics::prelude::*;
 use embedded_graphics::pixelcolor::Rgb565;
 use fastrand::Rng;
@@ -10,12 +11,12 @@ mod animation;
 pub const WIDTH: u32 = 240;
 pub const HEIGHT: u32 = 240;
 
-const STARTUP_ANIM: &[u8] = include_bytes!("../assets/startup.bmp");
-const BLINK_ANIM: &[u8] = include_bytes!("../assets/idle.bmp");
-const IDLETOEEPY: &[u8] = include_bytes!("../assets/idle_to_eepy.bmp");
-const EEPY: &[u8] = include_bytes!("../assets/eepy.bmp");
+const STARTUP_ANIM: &[u8] = include_bytes!("../../assets/startup.bmp");
+const BLINK_ANIM: &[u8] = include_bytes!("../../assets/idle.bmp");
+const IDLETOEEPY: &[u8] = include_bytes!("../../assets/idle_to_eepy.bmp");
+const EEPY: &[u8] = include_bytes!("../../assets/eepy.bmp");
 
-const IDLE_IMAGE: &[u8] = include_bytes!("../assets/face.bmp");
+const IDLE_IMAGE: &[u8] = include_bytes!("../../assets/face.bmp");
 
 const EEPY_TIMEOUT: u32 = 200;
 
@@ -60,7 +61,7 @@ impl App {
 
         Self {
             state: State::Startup,
-            dice: Rng::new(),
+            dice: Rng::with_seed(12345),
             eepy_timer: 0,
 
             startup_anim,

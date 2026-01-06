@@ -1,0 +1,10 @@
+[package]
+edition      = "2024"
+name         = "lebron-simulator"
+rust-version = "1.88"
+version      = "0.1.0"
+
+[dependencies]
+lebron-core = { path = "../core" }
+embedded-graphics = "0.8.1"
+embedded-graphics-simulator = "0.8.0"
