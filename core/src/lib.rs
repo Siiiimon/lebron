@@ -13,8 +13,8 @@ pub const HEIGHT: u32 = 240;
 
 const STARTUP_ANIM: &[u8] = include_bytes!("../../assets/startup.tga");
 const BLINK_ANIM: &[u8] = include_bytes!("../../assets/idle.tga");
-const IDLETOEEPY: &[u8] = include_bytes!("../../assets/idle_to_eepy.tga");
-const EEPY: &[u8] = include_bytes!("../../assets/eepy.tga");
+const IDLE_TO_EEPY_ANIM: &[u8] = include_bytes!("../../assets/idle_to_eepy.tga");
+const EEPY_ANIM: &[u8] = include_bytes!("../../assets/eepy.tga");
 
 const IDLE_IMAGE: &[u8] = include_bytes!("../../assets/face.tga");
 
@@ -51,10 +51,10 @@ impl App {
         let blink = Tga::<Rgb565>::from_slice(BLINK_ANIM).unwrap();
         let blink_anim = animation::Animation::new(blink, 9);
 
-        let idle_to_eepy = Tga::<Rgb565>::from_slice(IDLETOEEPY).unwrap();
+        let idle_to_eepy = Tga::<Rgb565>::from_slice(IDLE_TO_EEPY_ANIM).unwrap();
         let idle_to_eepy_anim = animation::Animation::new(idle_to_eepy, 5);
 
-        let eepy = Tga::<Rgb565>::from_slice(EEPY).unwrap();
+        let eepy = Tga::<Rgb565>::from_slice(EEPY_ANIM).unwrap();
         let eepy_anim = animation::Animation::new(eepy, 16);
 
         let idle_image = Tga::<Rgb565>::from_slice(IDLE_IMAGE).unwrap();
