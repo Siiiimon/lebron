@@ -38,7 +38,14 @@ fn main() -> ! {
     let peripherals = esp_hal::init(config);
 
     let mut display_buffer = [0_u8; 8192];
-    let mut display = new_display(peripherals, &mut display_buffer);
+    let mut display = new_display(
+        peripherals.GPIO10,
+        peripherals.GPIO12,
+        peripherals.GPIO11,
+        peripherals.GPIO8,
+        peripherals.SPI2,
+        &mut display_buffer
+    );
 
     let mut app = App::new();
 
