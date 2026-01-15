@@ -8,12 +8,11 @@
 #![deny(clippy::large_stack_frames)]
 
 use esp_hal::{
-    clock::CpuClock,
-    main,
+    clock::CpuClock, delay::Delay, main, time::Instant
 };
 use lebron_firmware::display::new_display;
 
-use lebron_core::App;
+use lebron_core::{App, FRAME_BUDGET};
 
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
@@ -49,9 +48,17 @@ fn main() -> ! {
 
     let mut app = App::new();
 
+    let delay = Delay::new();
     loop {
+        let frame_start = Instant::now();
         app.update();
         let _ = app.draw(&mut display);
+
+        let elapsed = frame_start.elapsed().as_micros();
+        if elapsed < FRAME_BUDGET {
+            let wait = FRAME_BUDGET - elapsed;
+            delay.delay_micros(wait as u32);
+        }
     }
 
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v~1.0/examples

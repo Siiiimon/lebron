@@ -10,6 +10,8 @@ mod animation;
 
 pub const WIDTH: u32 = 240;
 pub const HEIGHT: u32 = 240;
+pub const TARGET_FPS: u64 = 30;
+pub const FRAME_BUDGET: u64 = 1_000_000 / TARGET_FPS;
 
 const STARTUP_ANIM: &[u8] = include_bytes!("../../assets/startup.tga");
 const BLINK_ANIM: &[u8] = include_bytes!("../../assets/idle.tga");
