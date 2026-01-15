@@ -40,8 +40,8 @@ fn main() -> ! {
     let mut display_buffer = [0_u8; 8192];
     let mut display = new_display(
         peripherals.GPIO10,
-        peripherals.GPIO12,
-        peripherals.GPIO11,
+        peripherals.GPIO16,
+        peripherals.GPIO15,
         peripherals.GPIO8,
         peripherals.SPI2,
         &mut display_buffer
