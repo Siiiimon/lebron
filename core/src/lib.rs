@@ -10,8 +10,14 @@ mod animation;
 
 pub const WIDTH: u32 = 240;
 pub const HEIGHT: u32 = 240;
+
 pub const TARGET_FPS: u64 = 30;
 pub const FRAME_BUDGET: u64 = 1_000_000 / TARGET_FPS;
+
+const JOLT_HIGH_THRESHOLD_G: f32 = 1.5;
+const JOLT_LOW_THRESHOLD_G: f32 = 0.5;
+const JOLT_HIGH_SQ: f32 = JOLT_HIGH_THRESHOLD_G * JOLT_HIGH_THRESHOLD_G;
+const JOLT_LOW_SQ: f32 = JOLT_LOW_THRESHOLD_G * JOLT_LOW_THRESHOLD_G;
 
 const STARTUP_ANIM: &[u8] = include_bytes!("../../assets/startup.tga");
 const BLINK_ANIM: &[u8] = include_bytes!("../../assets/idle.tga");
@@ -27,6 +33,7 @@ pub enum State {
 
     Idle,
     Blink,
+    Jolt,
 
     IdleToEepy,
     Eepy,
@@ -75,7 +82,21 @@ impl App {
         }
     }
 
-    pub fn update(&mut self) {
+    fn did_jolt(accel: Option<(f32, f32, f32)>) -> bool {
+        if let Some((x, y, z)) = accel {
+            let magnitude_sq = x*x + y*y + z*z;
+
+            return magnitude_sq > JOLT_HIGH_SQ || magnitude_sq < JOLT_LOW_SQ
+        }
+
+        false
+    }
+
+    pub fn update(&mut self, accel: Option<(f32, f32, f32)>) {
+        if Self::did_jolt(accel) {
+            self.state = State::Jolt;
+        }
+
         match self.state {
             State::Startup => {
                 if self.startup_anim.tick() {
@@ -106,6 +127,13 @@ impl App {
                     self.state = State::IdleToEepy;
                 }
             },
+            State::Jolt => {
+                // FIXME: quick hack while we don't have a jolt animation
+                if self.dice.f32() < 0.2 {
+                    self.state = State::Blink;
+                }
+
+            },
         }
     }
 
@@ -119,6 +147,7 @@ impl App {
             State::IdleToEepy => self.idle_to_eepy_anim.draw(display)?,
             State::Eepy => self.eepy_anim.draw(display)?,
             State::Idle => self.idle_image.draw(display)?,
+            State::Jolt => display.clear(Rgb565::CSS_TOMATO)?,
         }
 
         Ok(())

@@ -82,20 +82,15 @@ fn main() -> ! {
     loop {
         let frame_start = Instant::now();
 
-        match accelerometer.accel_norm() {
-            Ok(data) => {
-                if frame_count % 30 == 0 {
-                    info!("Accel: X={:.2} Y={:.2} Z={:.2}", data.x, data.y, data.z);
-                }
-            }
-            Err(e) => {
-                if frame_count % 30 == 0 {
-                    info!("Accel Error: {:?}", e);
-                }
+        let accel_data = accelerometer.accel_norm();
+        if frame_count % 30 == 0 {
+            match &accel_data {
+                Ok(data) => info!("Accel: X={:.2} Y={:.2} Z={:.2}", data.x, data.y, data.z),
+                Err(e) => info!("Accel Error: {:?}", e),
             }
         }
 
-        app.update();
+        app.update(accel_data.ok().map(|d| (d.x, d.y, d.z)));
         let _ = app.draw(&mut display);
 
         let elapsed = frame_start.elapsed().as_micros();
