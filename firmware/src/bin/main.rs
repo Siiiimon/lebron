@@ -7,12 +7,17 @@
 )]
 #![deny(clippy::large_stack_frames)]
 
+use embedded_hal_compat::ReverseCompat;
 use esp_hal::{
-    clock::CpuClock, delay::Delay, main, time::Instant
+    clock::CpuClock, delay::Delay, i2c::master::{Config as I2cConfig, I2c}, main, time::{Instant, Rate}
 };
+use esp_println::{print, println};
 use lebron_firmware::display::new_display;
 
 use lebron_core::{App, FRAME_BUDGET};
+use lis3dh::Lis3dh;
+use lis3dh::accelerometer::Accelerometer;
+use log::info;
 
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
@@ -33,9 +38,12 @@ fn main() -> ! {
 
     esp_println::logger::init_logger_from_env();
 
+    print!("initializing...");
     let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
     let peripherals = esp_hal::init(config);
+    println!("DONE");
 
+    print!("setting up display...");
     let mut display_buffer = [0_u8; 8192];
     let mut display = new_display(
         peripherals.GPIO10,
@@ -45,12 +53,48 @@ fn main() -> ! {
         peripherals.SPI2,
         &mut display_buffer
     );
+    println!("DONE");
 
+    print!("instantiating I2C...");
+    let i2c = I2c::new(
+        peripherals.I2C0,
+        I2cConfig::default()
+            .with_frequency(Rate::from_khz(400)),
+    )
+        .unwrap()
+        .with_sda(peripherals.GPIO5)
+        .with_scl(peripherals.GPIO6);
+    println!("DONE");
+
+    print!("connecting accelerometer...");
+    let i2c_legacy = i2c.reverse();
+    let mut accelerometer = Lis3dh::new_i2c(i2c_legacy, lis3dh::SlaveAddr::Alternate).unwrap();
+    accelerometer.set_range(lis3dh::Range::G8).unwrap();
+    println!("DONE");
+
+    print!("constructing app state...");
     let mut app = App::new();
+    println!("DONE");
 
+    println!("entering main loop");
     let delay = Delay::new();
+    let mut frame_count: u32 = 0;
     loop {
         let frame_start = Instant::now();
+
+        match accelerometer.accel_norm() {
+            Ok(data) => {
+                if frame_count % 30 == 0 {
+                    info!("Accel: X={:.2} Y={:.2} Z={:.2}", data.x, data.y, data.z);
+                }
+            }
+            Err(e) => {
+                if frame_count % 30 == 0 {
+                    info!("Accel Error: {:?}", e);
+                }
+            }
+        }
+
         app.update();
         let _ = app.draw(&mut display);
 
@@ -59,6 +103,8 @@ fn main() -> ! {
             let wait = FRAME_BUDGET - elapsed;
             delay.delay_micros(wait as u32);
         }
+
+        frame_count = frame_count.wrapping_add(1);
     }
 
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v~1.0/examples
