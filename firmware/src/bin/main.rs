@@ -9,7 +9,7 @@
 
 use embedded_hal_compat::ReverseCompat;
 use esp_hal::{
-    clock::CpuClock, delay::Delay, i2c::master::{Config as I2cConfig, I2c}, main, time::{Instant, Rate}
+    clock::CpuClock, delay::Delay, i2c::master::{Config as I2cConfig, I2c}, main, time::{Instant, Rate}, uart::{Uart, Config as UartConfig}
 };
 use esp_println::{print, println};
 use lebron_firmware::display::new_display;
@@ -17,7 +17,76 @@ use lebron_firmware::display::new_display;
 use lebron_core::{App, FRAME_BUDGET};
 use lis3dh::Lis3dh;
 use lis3dh::accelerometer::Accelerometer;
-use log::info;
+use log::{debug, error, info};
+
+use embedded_io::Write;
+
+pub struct AudioPlayer<'a> {
+    uart: Uart<'a, esp_hal::Blocking>,
+}
+
+impl<'a> AudioPlayer<'a>
+{
+    pub fn new(uart: Uart<'a, esp_hal::Blocking>) -> Self {
+        Self { uart }
+    }
+
+    pub fn reset(&mut self) {
+        self.send_cmd(0x0C, 0);
+    }
+
+    fn send_cmd(&mut self, command: u8, param: u16) {
+        let mut buffer = [0u8; 10];
+        buffer[0] = 0x7E; // Start
+        buffer[1] = 0xFF; // Ver
+        buffer[2] = 0x06; // Len
+        buffer[3] = command;
+        buffer[4] = 0x00; // Feedback
+        buffer[5] = (param >> 8) as u8; // Param High
+        buffer[6] = (param & 0xFF) as u8; // Param Low
+        buffer[9] = 0xEF; // End
+
+        // Checksum
+        let sum: u16 = (buffer[1] as u16).wrapping_add(buffer[2] as u16)
+            .wrapping_add(buffer[3] as u16).wrapping_add(buffer[4] as u16)
+            .wrapping_add(buffer[5] as u16).wrapping_add(buffer[6] as u16);
+        let checksum = 0u16.wrapping_sub(sum);
+        buffer[7] = (checksum >> 8) as u8;
+        buffer[8] = (checksum & 0xFF) as u8;
+
+        info!("sending audio command {:X?}", buffer);
+
+        let _ = self.uart.write(&buffer);
+    }
+
+    pub fn listen_debug(&mut self) {
+        println!("--- SNIFFER START ---");
+        println!("Waiting for data from DFPlayer... (If this hangs, RX is dead)");
+
+        let mut buffer = [0u8; 1];
+
+        for i in 0..10 {
+            match self.uart.read(&mut buffer) {
+                Ok(_) => {
+                    print!("{:02X} ", buffer[0]);
+                },
+                Err(e) => {
+                    println!("Error: {:?}", e);
+                    break;
+                }
+            }
+        }
+        println!("\n--- SNIFFER END ---");
+    }
+
+    pub fn play_track(&mut self, track: u16) {
+        self.send_cmd(0x03, track);
+    }
+
+    pub fn set_volume(&mut self, vol: u16) {
+        self.send_cmd(0x06, vol); // 0-30
+    }
+}
 
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
@@ -76,8 +145,29 @@ fn main() -> ! {
     let mut app = App::new();
     println!("DONE");
 
-    println!("entering main loop");
+    print!("establishing uart connection to audio player...");
+    let uart = Uart::new(peripherals.UART1, UartConfig::default().with_baudrate(9600))
+        .unwrap()
+        .with_tx(peripherals.GPIO17)
+        .with_rx(peripherals.GPIO18);
+
+    let mut audio_player = AudioPlayer::new(uart);
+    println!("DONE");
+
     let delay = Delay::new();
+    info!("Waiting for module to wake up");
+    delay.delay_millis(2000);
+    // audio_player.listen_debug();
+
+    info!("Setting Volume");
+    audio_player.set_volume(30); // Set volume (0 to 30)
+    delay.delay_millis(100);
+
+    info!("Playing Track 1");
+    audio_player.play_track(1); // Plays /mp3/0001.mp3
+    delay.delay_millis(100);
+
+    println!("entering main loop");
     let mut frame_count: u32 = 0;
     loop {
         let frame_start = Instant::now();
@@ -85,8 +175,8 @@ fn main() -> ! {
         let accel_data = accelerometer.accel_norm();
         if frame_count % 30 == 0 {
             match &accel_data {
-                Ok(data) => info!("Accel: X={:.2} Y={:.2} Z={:.2}", data.x, data.y, data.z),
-                Err(e) => info!("Accel Error: {:?}", e),
+                Ok(data) => debug!("Accel: X={:.2} Y={:.2} Z={:.2}", data.x, data.y, data.z),
+                Err(e) => error!("Accel Error: {:?}", e),
             }
         }
 
